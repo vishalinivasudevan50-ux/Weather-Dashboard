@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkyPulse | Real-Time Weather Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-default">
+  <div class="background-overlay"></div>
+
+  <!-- MAIN APP CONTAINER -->
+  <div class="app-container">
+    
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-icon">⛅</div>
+        <div class="logo-text">
+          <h1>Sky<span>Pulse</span></h1>
+          <p class="tagline">Live RESTful Weather Intelligence</p>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <!-- Temperature Unit Toggle -->
+        <div class="unit-toggle" role="group" aria-label="Temperature unit selector">
+          <button type="button" id="unitCelsius" class="unit-btn active" data-unit="C" title="Celsius (°C)">°C</button>
+          <button type="button" id="unitFahrenheit" class="unit-btn" data-unit="F" title="Fahrenheit (°F)">°F</button>
+        </div>
+
+        <!-- Current Local Time Badge -->
+        <div class="clock-badge" id="liveClock" title="Local System Time">--:--:--</div>
+      </div>
+    </header>
+
+    <!-- SEARCH & CONTROLS SECTION -->
+    <section class="search-section" aria-label="Search controls">
+      <form id="searchForm" class="search-form" role="search" novalidate>
+        <div class="search-input-wrapper">
+          <span class="search-icon" aria-hidden="true">🔍</span>
+          <input 
+            type="text" 
+            id="cityInput" 
+            class="search-input" 
+            placeholder="Search by city name (e.g. London, Tokyo, New York, Chennai)..." 
+            autocomplete="off"
+            spellcheck="false"
+            required
+            aria-label="City search input"
+          >
+          <button type="button" id="clearSearchBtn" class="clear-btn hidden" aria-label="Clear search input">✕</button>
+        </div>
+
+        <button type="submit" id="searchSubmitBtn" class="btn btn-primary">
+          <span class="btn-text">Get Weather</span>
+          <span class="btn-spinner hidden" aria-hidden="true"></span>
+        </button>
+
+        <button type="button" id="geoBtn" class="btn btn-secondary" title="Use current GPS location" aria-label="Use Current Location">
+          <span class="geo-icon" aria-hidden="true">📍</span>
+          <span class="geo-text">My Location</span>
+        </button>
+      </form>
+
+      <!-- RECENT SEARCHES CHIPS -->
+      <div class="recent-searches-container" id="recentSearchesSection">
+        <span class="recent-label">Recent:</span>
+        <div class="recent-chips" id="recentChips">
+          <!-- Dynamically populated chips -->
+        </div>
+        <button type="button" id="clearHistoryBtn" class="clear-history-btn hidden" title="Clear search history">Clear</button>
+      </div>
+    </section>
+
+    <!-- FEEDBACK & NOTIFICATION BANNER CONTAINER -->
+    <div id="statusContainer" class="status-container" aria-live="polite">
+      <!-- Offline Banner -->
+      <div id="offlineBanner" class="alert-banner alert-warning hidden" role="status">
+        <span class="alert-icon">⚠️</span>
+        <div class="alert-content">
+          <strong>You are currently offline.</strong>
+          <p>Please check your internet connection. Cached or previous weather data is shown.</p>
+        </div>
+      </div>
+
+      <!-- Error Card (Dynamic) -->
+      <div id="errorCard" class="alert-banner alert-danger hidden" role="alert">
+        <span class="alert-icon">🚨</span>
+        <div class="alert-content">
+          <strong id="errorTitle">Request Failed</strong>
+          <p id="errorMessage">Unable to fetch weather data.</p>
+        </div>
+        <button type="button" id="retryBtn" class="btn-retry">Retry</button>
+        <button type="button" id="dismissErrorBtn" class="btn-dismiss" aria-label="Dismiss message">✕</button>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingIndicator" class="loading-indicator hidden" role="status">
+        <div class="radar-pulse"></div>
+        <p id="loadingMessage">Fetching live REST API telemetry...</p>
+      </div>
+    </div>
+
+    <!-- MAIN WEATHER DISPLAY VIEWPORT -->
+    <main id="weatherDashboard" class="weather-dashboard">
+      
+      <!-- HERO CURRENT WEATHER CARD -->
+      <section class="card hero-card" id="heroCard" aria-label="Current weather overview">
+        <div class="hero-header">
+          <div class="location-details">
+            <h2 id="cityName" class="city-name">Loading city...</h2>
+            <p id="cityRegion" class="city-region">Region, Country</p>
+            <p id="weatherUpdatedTime" class="weather-time">Updated: Just now</p>
+          </div>
+          <div class="weather-condition-badge" id="conditionBadge">
+            <span class="badge-icon" id="heroWeatherIcon">⛅</span>
+            <span class="badge-text" id="heroWeatherDescription">Fetching...</span>
+          </div>
+        </div>
+
+        <div class="hero-body">
+          <div class="temp-display">
+            <span class="temp-value" id="currentTemp">--</span>
+            <span class="temp-symbol" id="tempUnitDisplay">°C</span>
+          </div>
+
+          <div class="temp-meta">
+            <div class="meta-row">
+              <span class="meta-label">Feels like</span>
+              <strong class="meta-value" id="feelsLikeTemp">--°</strong>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">High / Low</span>
+              <strong class="meta-value" id="minMaxTemp">--° / --°</strong>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Coordinates</span>
+              <span class="meta-value coordinates" id="geoCoordinates">--°N, --°E</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- KEY METRICS GRID -->
+      <section class="metrics-grid" aria-label="Detailed weather metrics">
+        
+        <!-- Humidity -->
+        <article class="card metric-card">
+          <div class="metric-header">
+            <span class="metric-icon">💧</span>
+            <span class="metric-title">Humidity</span>
+          </div>
+          <div class="metric-body">
+            <div class="metric-value" id="humidityValue">--%</div>
+            <div class="metric-bar-track">
+              <div class="metric-bar-fill" id="humidityBar" style="width: 0%;"></div>
+            </div>
+            <p class="metric-subtitle" id="humidityRating">Relative humidity</p>
+          </div>
+        </article>
+
+        <!-- Wind Speed -->
+        <article class="card metric-card">
+          <div class="metric-header">
+            <span class="metric-icon">💨</span>
+            <span class="metric-title">Wind Speed</span>
+          </div>
+          <div class="metric-body">
+            <div class="metric-value" id="windSpeedValue">-- km/h</div>
+            <p class="metric-subtitle" id="windDirection">Direction: --°</p>
+            <p class="metric-caption" id="windBeaufort">Moderate breeze</p>
+          </div>
+        </article>
+
+        <!-- Atmospheric Pressure -->
+        <article class="card metric-card">
+          <div class="metric-header">
+            <span class="metric-icon">⏲️</span>
+            <span class="metric-title">Air Pressure</span>
+          </div>
+          <div class="metric-body">
+            <div class="metric-value" id="pressureValue">-- hPa</div>
+            <p class="metric-subtitle" id="pressureState">Standard atmospheric</p>
+            <p class="metric-caption">Barometric measurement</p>
+          </div>
+        </article>
+
+        <!-- UV Index -->
+        <article class="card metric-card">
+          <div class="metric-header">
+            <span class="metric-icon">☀️</span>
+            <span class="metric-title">Max UV Index</span>
+          </div>
+          <div class="metric-body">
+            <div class="metric-value" id="uvValue">--</div>
+            <div class="metric-bar-track">
+              <div class="metric-bar-fill uv-bar" id="uvBar" style="width: 0%;"></div>
+            </div>
+            <p class="metric-subtitle" id="uvLevel">UV Risk: Moderate</p>
+          </div>
+        </article>
+
+        <!-- Sunrise & Sunset -->
+        <article class="card metric-card">
+          <div class="metric-header">
+            <span class="metric-icon">🌅</span>
+            <span class="metric-title">Sun Schedule</span>
+          </div>
+          <div class="metric-body schedule-body">
+            <div class="sun-item">
+              <span class="sun-label">Sunrise</span>
+              <strong id="sunriseTime" class="sun-time">--:--</strong>
+            </div>
+            <div class="sun-divider"></div>
+            <div class="sun-item">
+              <span class="sun-label">Sunset</span>
+              <strong id="sunsetTime" class="sun-time">--:--</strong>
+            </div>
+          </div>
+        </article>
+
+        <!-- Precipitation / Rain -->
+        <article class="card metric-card">
+          <div class="metric-header">
+            <span class="metric-icon">🌧️</span>
+            <span class="metric-title">Precipitation</span>
+          </div>
+          <div class="metric-body">
+            <div class="metric-value" id="precipValue">0.0 mm</div>
+            <p class="metric-subtitle" id="precipProbability">Rain Chance: 0%</p>
+            <p class="metric-caption" id="daylightStatus">Daylight telemetry</p>
+          </div>
+        </article>
+
+      </section>
+
+      <!-- 24-HOUR FORECAST CAROUSEL -->
+      <section class="card forecast-section" aria-label="Hourly 24-hour weather forecast">
+        <div class="section-heading">
+          <h3>🕒 24-Hour Hourly Forecast</h3>
+          <span class="scroll-tip">Scroll horizontally ➔</span>
+        </div>
+        <div class="hourly-track" id="hourlyTrack">
+          <!-- Dynamically populated hourly cards -->
+        </div>
+      </section>
+
+      <!-- 7-DAY EXTENDED FORECAST -->
+      <section class="card forecast-section" aria-label="7-day daily forecast">
+        <div class="section-heading">
+          <h3>📅 7-Day Extended Forecast</h3>
+          <span class="section-badge">Daily Telemetry</span>
+        </div>
+        <div class="daily-list" id="dailyForecastList">
+          <!-- Dynamically populated daily items -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p>Built with <strong>Asynchronous JavaScript</strong> &amp; <strong>Open-Meteo REST API</strong></p>
+        <p class="footer-links">
+          <span>Modern Fetch API</span> • 
+          <span>Async/Await</span> • 
+          <span>Nested JSON Parsing</span> • 
+          <span>Error Handling</span>
+        </p>
+      </div>
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
