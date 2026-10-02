@@ -44,7 +44,7 @@ Then visit: `http://localhost:8080`
 ## 📁 File Structure
 
 ```
-C:\Users\vijay\Desktop\Vish\Projects\weather-dashboard\
+weather-dashboard\
 ├── index.html        # Semantic HTML5 layout with glassmorphic cards and accessible widgets
 ├── style.css         # Modern responsive CSS, glassmorphism, animations, weather themes
 ├── app.js            # Asynchronous JavaScript: Fetch API, async/await, error handling, state
